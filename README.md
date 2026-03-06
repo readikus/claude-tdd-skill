@@ -83,7 +83,7 @@ Analyzes requirements and produces a TEST-PLAN.md with test specifications, impl
 
 **GSD mode** reads your PLAN.md files and derives test specs from plan objectives, must_haves, and task done-criteria.
 
-**Linear mode** fetches the task from Linear. If requirements are ambiguous, it posts clarification questions as comments on the task so the PM can respond. The test plan stays in `draft` status until clarified. Requires a [Linear MCP server](https://github.com/modelcontextprotocol/servers) configured in Claude Code.
+**Linear mode** fetches the task from Linear. If requirements are ambiguous, it posts clarification questions as comments on the task so the PM can respond. The test plan stays in `draft` status until clarified. Requires the [Linear MCP server](https://linear.app/docs/mcp) configured in Claude Code.
 
 **Standalone mode** analyzes existing code, detects testable exports, identifies coverage gaps, and generates a test plan.
 
@@ -227,7 +227,7 @@ Full report written to TEST-REVIEW.md with line-specific findings and suggested 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - Git
 - [GSD](https://github.com/gsd-build/get-shit-done) — optional, for phase integration
-- [Linear MCP](https://github.com/modelcontextprotocol/servers) — optional, for Linear task integration
+- [Linear MCP](https://linear.app/docs/mcp) — optional, for Linear task integration
 
 ---
 

@@ -2,64 +2,64 @@
 
 ```markdown
 ---
-phase: {XX-name}                          # GSD phase (omit for standalone)
-source_plans: [{XX-01-PLAN.md}, ...]      # Plans analyzed (omit for standalone)
-source_task: {LINEAR-ID}                  # Linear task ID (omit if not from Linear)
+title: {Feature or task name}
+source: {linear:ENG-123 | path:src/auth | description}
 test_framework: {jest|vitest|pytest|go-test|cargo-test}
-coverage_strategy: {behavior-first}       # behavior-first | contract-first | risk-first
+coverage_strategy: {behavior-first|contract-first|risk-first}
 status: {draft|confirmed|executing|complete}
+created: {ISO date}
 ---
 
 # Test Plan: {Title}
 
-## Requirements Source
+## Requirements
 
-{One of:}
-- **GSD Phase {X}:** {Phase name} — derived from {N} plan(s)
-- **Linear Task:** {ID} — {title}
-- **Codebase Analysis:** {path analyzed}
+**Source:** {Linear task ENG-123 | Code analysis of src/auth | User description}
 
-### Requirements Summary
+### Summary
 
-{Bullet list of requirements being tested. In GSD mode, derived from plan objectives and must_haves. In Linear mode, derived from task description. In standalone mode, derived from code analysis.}
+{Bullet list of requirements being tested}
+
+- {Requirement 1}
+- {Requirement 2}
+- {Requirement 3}
 
 ### Ambiguities
 
-{Requirements that are unclear or have multiple valid interpretations. In Linear mode, these get posted as clarification comments.}
+{Requirements that are unclear. In Linear mode, posted as comments for PM clarification.}
 
 - [ ] {Ambiguous requirement} — **Question:** {clarification needed}
-- [ ] {Ambiguous requirement} — **Question:** {clarification needed}
 
-{If no ambiguities: "None identified — requirements are clear."}
+{If none: "None — requirements are clear."}
 
 ## Testing Strategy
 
 **Approach:** {Why this strategy for this feature}
+**Framework:** {framework} — {why, or "matches project convention"}
 
-**Testing pyramid for this feature:**
-- Unit tests: {N} — {what they cover}
-- Integration tests: {N} — {what they cover}
-- Not testing: {what's excluded and why}
-
-**Framework:** {framework} — {why this choice, or "matches project convention"}
+| Level | Count | What they cover |
+|-------|-------|----------------|
+| Unit tests | {N} | {scope} |
+| Integration tests | {N} | {scope} |
+| Not testing | — | {what's excluded and why} |
 
 ## Test Specifications
 
-### {Feature/Module 1}: {Name}
+### {Feature 1}: {Name}
 
 **Source file:** `{path/to/source.ext}`
 **Test file:** `{path/to/source.test.ext}`
 
 #### Behaviors
 
-1. **`should {behavior description}`**
-   - Given: {precondition/setup}
-   - When: {action/trigger}
+1. **`should {behavior}`**
+   - Given: {precondition}
+   - When: {action}
    - Then: {expected outcome}
 
-2. **`should {behavior description}`**
-   - Given: {precondition/setup}
-   - When: {action/trigger}
+2. **`should {behavior}`**
+   - Given: {precondition}
+   - When: {action}
    - Then: {expected outcome}
 
 #### Edge Cases
@@ -69,62 +69,55 @@ status: {draft|confirmed|executing|complete}
    - When: {action}
    - Then: {expected behavior}
 
-4. **`should reject {invalid input}`** — {what could go wrong}
-   - Given: {invalid state/input}
+4. **`should reject {invalid input}`**
+   - Given: {invalid state}
    - When: {action}
-   - Then: {error/rejection behavior}
+   - Then: {error/rejection}
 
 #### Not Testing
 
-- {Excluded behavior} — {reason: e.g., "framework responsibility", "visual only", "covered by integration test"}
+- {Excluded behavior} — {reason}
 
 ---
 
-### {Feature/Module 2}: {Name}
+### {Feature 2}: {Name}
 
-{Same structure as above}
+{Same structure}
 
 ---
 
-## Implementation Order
+## Implementation Tasks
 
-{Ordered list — earlier tests have no dependencies on later ones}
+Tasks are executed in order. Each task follows RED-GREEN-REFACTOR.
 
-1. **{Test group 1}** — {rationale: e.g., "foundation — no dependencies"}
-   - Tests: {list of test names}
-   - Files: `{test file path}`
+<task name="{Task 1 name}">
+  <files>{source file}, {test file}</files>
+  <tests>
+    Specs: {list of spec names from above}
+  </tests>
+  <implement>
+    {What to build to make the tests pass}
+  </implement>
+  <done>{All N specs passing}</done>
+</task>
 
-2. **{Test group 2}** — {rationale: e.g., "depends on group 1 types"}
-   - Tests: {list of test names}
-   - Files: `{test file path}`
-
-3. **{Integration tests}** — {rationale: "requires unit-tested modules"}
-   - Tests: {list of test names}
-   - Files: `{test file path}`
+<task name="{Task 2 name}">
+  <files>{source file}, {test file}</files>
+  <tests>
+    Specs: {list of spec names}
+  </tests>
+  <implement>
+    {What to build}
+  </implement>
+  <done>{All N specs passing}</done>
+</task>
 
 ## Anti-Pattern Guards
 
-{Specific to THIS test plan — which anti-patterns are most likely and how to avoid them}
+{Specific to THIS plan — which anti-patterns are most likely and how to avoid them}
 
 - [ ] **No Inspector tests** — test {module}'s output, not its internal method calls
 - [ ] **No Mockery** — only mock {specific boundary}, use real {specific collaborator}
 - [ ] **No Happy Path Only** — every behavior has at least one error/edge case test
 - [ ] **No Giant tests** — each test verifies one behavior
-- [ ] {Additional context-specific guard}
-
-## GSD Integration
-
-{Only present in GSD mode}
-
-### Mapping to Plans
-
-| Plan | Feature | Test Count | Priority |
-|------|---------|-----------|----------|
-| {XX-01} | {feature} | {N} | {high/medium/low} |
-| {XX-02} | {feature} | {N} | {high/medium/low} |
-
-### Execution Notes
-
-- Tests from Plan {XX-01} should be written/passing before Plan {XX-02} implementation begins
-- {Any cross-plan test dependencies}
 ```

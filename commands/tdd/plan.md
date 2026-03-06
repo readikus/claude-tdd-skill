@@ -1,7 +1,7 @@
 ---
 name: tdd:plan
-description: Create a TDD test plan from GSD phase, Linear task, or codebase analysis
-argument-hint: "[phase-number | LINEAR-ID | path] [--phase N]"
+description: Create a TDD test plan from Linear task, code analysis, or feature description
+argument-hint: "[LINEAR-ID | path | description]"
 allowed-tools:
   - Read
   - Write
@@ -14,17 +14,15 @@ allowed-tools:
   - mcp__linear__*
 ---
 <objective>
-Analyze requirements and produce a TEST-PLAN.md defining what tests to write, in what order, with anti-pattern guards.
+Analyze requirements and produce a TEST-PLAN.md — the single source of truth for what to test and what to build. Contains Given-When-Then test specifications and implementation tasks.
 
 **Modes (auto-detected from argument):**
-- **GSD mode** — phase number (e.g., `3`) → analyze PLAN.md files → TEST-PLAN.md in phase dir
-- **Linear mode** — Linear ID (e.g., `ENG-123`) → analyze task → TEST-PLAN.md, post clarifications to Linear
-- **Standalone mode** — path (e.g., `src/auth`) → analyze code → TEST-PLAN.md
-- **No argument** — auto-detect: GSD if `.planning/` exists, else standalone on current dir
+- **Linear mode** — Linear ID (e.g., `ENG-123`) → fetch task, analyze requirements, post clarifications if ambiguous
+- **Standalone mode** — path (e.g., `src/auth`) → analyze existing code for coverage gaps
+- **Standalone mode** — description (e.g., `"email validation service"`) → derive tests from requirements
+- **No argument** — analyze current directory
 
-**Linear + GSD combo:** `/tdd:plan ENG-123 --phase 3` → fetch Linear task, map to GSD phase
-
-**Output:** TEST-PLAN.md with Given-When-Then specs, implementation order, and anti-pattern guards
+**Output:** `.tdd/TEST-PLAN.md` with test specs, implementation tasks, and anti-pattern guards
 </objective>
 
 <execution_context>
@@ -35,9 +33,6 @@ Analyze requirements and produce a TEST-PLAN.md defining what tests to write, in
 
 <context>
 Arguments: $ARGUMENTS
-
-@.planning/ROADMAP.md
-@.planning/STATE.md
 </context>
 
 <process>

@@ -1,7 +1,7 @@
 ---
 name: tdd:execute
-description: Execute a GSD phase with TDD enforcement — tests written before implementation
-argument-hint: "<phase-number> [--gaps-only]"
+description: Execute TEST-PLAN.md with strict RED-GREEN-REFACTOR TDD
+argument-hint: "[--resume]"
 allowed-tools:
   - Read
   - Write
@@ -13,37 +13,31 @@ allowed-tools:
   - AskUserQuestion
 ---
 <objective>
-Wrap GSD's execute-phase to enforce test-first development. For each plan in the phase, the executor receives test specifications from TEST-PLAN.md and must write failing tests BEFORE implementing.
+Execute the test plan at `.tdd/TEST-PLAN.md` using strict TDD.
 
-**Prerequisite:** TEST-PLAN.md must exist for the phase. Run `/tdd:plan {phase}` first.
+For each task in the plan:
+1. **RED** — Write failing tests from the Given-When-Then specs
+2. **GREEN** — Implement minimal code to pass
+3. **REFACTOR** — Clean up if needed
 
-**What changes vs standard execute-phase:**
-1. TEST-PLAN.md test specs injected into executor context per plan
-2. Executor writes failing tests first (RED), then implements (GREEN), then refactors
-3. Commit order enforced: test → feat → refactor
-4. TDD compliance verified after each plan
-5. TDD metrics included in phase summary
+Each phase gets its own atomic commit. Progress tracked in `.tdd/state.json` so execution can be resumed.
 
-**What stays the same:** Wave execution, parallelization, checkpoints, state updates, verification — all standard GSD behavior.
+**Prerequisite:** Run `/tdd:plan` first to create TEST-PLAN.md.
 </objective>
 
 <execution_context>
 @workflows/execute-tdd.md
-@~/.claude/get-shit-done/workflows/execute-phase.md
-@~/.claude/get-shit-done/references/tdd.md
+@references/anti-patterns.md
 </execution_context>
 
 <context>
-Phase: $ARGUMENTS
+Arguments: $ARGUMENTS
 
-**Flags:**
-- `--gaps-only` — Execute only gap closure plans (inherited from GSD)
-
-@.planning/ROADMAP.md
-@.planning/STATE.md
+@.tdd/TEST-PLAN.md
+@.tdd/state.json
 </context>
 
 <process>
 Execute the execute-tdd workflow from @workflows/execute-tdd.md end-to-end.
-This workflow wraps the standard execute-phase workflow — all GSD gates preserved, TDD enforcement added.
+Preserve all workflow gates (plan loading, state tracking, RED-GREEN-REFACTOR cycle, error handling, verification).
 </process>

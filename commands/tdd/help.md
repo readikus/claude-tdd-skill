@@ -13,12 +13,12 @@ Output this markdown directly:
  TDD Skill — Commands
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## Core Commands
+## Commands
 
 | Command | Description |
 |---------|-------------|
 | `/tdd:plan [target]` | Create test plan from requirements |
-| `/tdd:execute [phase]` | Execute phase with TDD enforcement |
+| `/tdd:execute` | Execute test plan with RED-GREEN-REFACTOR |
 | `/tdd:review [path]` | Audit existing tests for anti-patterns |
 | `/tdd:help` | This help page |
 
@@ -26,46 +26,70 @@ Output this markdown directly:
 
 | Argument | Mode | Example |
 |----------|------|---------|
-| Phase number | GSD phase | `/tdd:plan 3` |
 | Linear ID | Linear task | `/tdd:plan ENG-123` |
-| File path | Standalone | `/tdd:plan src/auth` |
-| (none) | Auto-detect | `/tdd:plan` |
-| Linear + Phase | Combined | `/tdd:plan ENG-123 --phase 3` |
+| File path | Code analysis | `/tdd:plan src/auth` |
+| Description | New feature | `/tdd:plan "email validation"` |
+| (none) | Current directory | `/tdd:plan` |
 
 ## Workflow
 
 ```
-Requirements ──► /tdd:plan ──► TEST-PLAN.md
+Requirements ──► /tdd:plan ──► .tdd/TEST-PLAN.md
                                     │
                                     ▼
-                            /tdd:execute ──► Tests first, then code
-                                    │
+                            /tdd:execute ──► RED-GREEN-REFACTOR
+                                    │         per task
                                     ▼
-                            /tdd:review ──► Verify test quality
+                            /tdd:review ──► .tdd/TEST-REVIEW.md
 ```
 
-**With GSD:**
-```
-/gsd:plan-phase 3     →  Creates PLAN.md (what to build)
-/tdd:plan 3           →  Creates TEST-PLAN.md (what to test)
-/tdd:execute 3        →  Executes with TDD (tests before code)
-/tdd:review 3         →  Audits test quality
-```
+## With Linear
 
-**With Linear:**
 ```
-/tdd:plan ENG-123             →  Reads task, posts clarification questions
+/tdd:plan ENG-123         →  Reads task, posts clarification questions
 (PM answers on Linear)
-/tdd:plan ENG-123             →  Re-run: picks up answers, finalizes plan
-/tdd:plan ENG-123 --phase 3   →  Maps to GSD phase
-/tdd:execute 3                →  Executes with TDD
+/tdd:plan ENG-123         →  Re-run: picks up answers, finalizes plan
+/tdd:execute              →  RED-GREEN-REFACTOR per task
+/tdd:review               →  Verify test quality
 ```
 
-**Standalone:**
+## Standalone
+
 ```
-/tdd:plan src/auth     →  Analyzes code, creates test plan
-/tdd:review src/auth   →  Audits existing tests
+/tdd:plan src/auth        →  Analyzes code, creates test plan
+/tdd:execute              →  Write tests first, then implement
+/tdd:review               →  Audit test quality
 ```
+
+## New Feature from Description
+
+```
+/tdd:plan "user registration with email verification"
+/tdd:execute              →  Write tests first, then implement
+/tdd:review               →  Verify test quality
+```
+
+## Files
+
+```
+.tdd/
+  TEST-PLAN.md            # Test specs + implementation tasks
+  state.json              # Execution progress (resume support)
+  TEST-REVIEW.md          # Anti-pattern audit results
+```
+
+## RED-GREEN-REFACTOR Cycle
+
+For each task in the test plan:
+
+1. **RED** — Write failing tests from Given-When-Then specs
+   Commit: `test: add failing tests for {task}`
+
+2. **GREEN** — Write minimal code to pass all tests
+   Commit: `feat: implement {task}`
+
+3. **REFACTOR** — Clean up if needed (tests must still pass)
+   Commit: `refactor: clean up {task}`
 
 ## Anti-Patterns Detected by /tdd:review
 
@@ -82,14 +106,6 @@ Requirements ──► /tdd:plan ──► TEST-PLAN.md
 | The Slow Poke | Medium | Unnecessarily slow tests |
 | The Nitpicker | Medium | Over-specifying irrelevant details |
 | The Dead Tree | Low | Commented-out/skipped tests |
-
-## Key Concepts
-
-**TEST-PLAN.md** — The artifact. Defines what to test using Given-When-Then specs, not how to implement. Lives alongside PLAN.md in phase directories.
-
-**TDD Enforcement** — During /tdd:execute, the executor MUST commit failing tests before implementation. Commit order: `test()` → `feat()` → `refactor()`.
-
-**Ambiguity Detection** — In Linear mode, unclear requirements are posted as clarification comments. The test plan stays in `draft` status until clarified.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 </process>

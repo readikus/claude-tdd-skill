@@ -1,5 +1,5 @@
 <purpose>
-Orchestrate test plan creation from GSD phases, Linear tasks, or standalone code analysis. Detects mode from arguments, loads context, spawns tdd-planner agent, handles ambiguity resolution.
+Orchestrate test plan creation from Linear tasks, code analysis, or user descriptions. Detects mode from arguments, loads context, spawns tdd-planner agent, handles ambiguity resolution.
 </purpose>
 
 <core_principle>
@@ -11,61 +11,19 @@ Requirements drive tests. Tests drive implementation. This workflow ensures requ
 <step name="detect_mode" priority="first">
 Parse $ARGUMENTS to determine mode:
 
-**GSD mode:** Argument is a phase number (integer or decimal like `2.1`)
-- Validate: `.planning/` directory exists
-- Load via: `gsd-tools.js init`
+**Linear mode:** Argument matches a Linear ID pattern (e.g., `ENG-123`, `PROJ-45`)
+- Validate: Linear MCP tools available (check for mcp__linear__* tools)
+- If Linear MCP not available: error with setup instructions
 
-**Linear mode:** Argument starts with a Linear ID pattern (e.g., `ENG-123`, `PROJ-45`)
-- Validate: Linear MCP tools available
-- Can combine with GSD: `--phase 3` flag maps Linear task to a phase
+**Standalone mode:** Argument is a file/directory path, a description, or no argument
+- Path: validate it exists
+- Description: user describes what to build (free text)
+- No argument: analyze current directory
 
-**Standalone mode:** Argument is a file/directory path
-- Validate: Path exists
-- No GSD or Linear dependencies
-
-**Auto-detect:** No argument
-- If `.planning/` exists → GSD mode, detect next phase needing test plan
-- Otherwise → Standalone mode, use current directory
-
-```bash
-# Check for GSD project
-if [ -d ".planning" ]; then
-  GSD_MODE=true
-  INIT=$(node ~/.claude/get-shit-done/bin/gsd-tools.js init plan-phase "${PHASE_ARG}" --include state,roadmap,context,research 2>/dev/null)
-fi
-```
-</step>
-
-<step name="load_context">
-
-### GSD Mode Context
-```bash
-# Load phase plans
-PLANS=$(cat .planning/phases/${PHASE_DIR}/*-PLAN.md 2>/dev/null)
-
-# Load phase context (user decisions)
-CONTEXT=$(cat .planning/phases/${PHASE_DIR}/*-CONTEXT.md 2>/dev/null)
-
-# Load existing test plan (if re-running)
-EXISTING_TEST_PLAN=$(cat .planning/phases/${PHASE_DIR}/*-TEST-PLAN.md 2>/dev/null)
-
-# Load codebase testing conventions
-TESTING_CONVENTIONS=$(cat .planning/codebase/TESTING.md 2>/dev/null)
-CONVENTIONS=$(cat .planning/codebase/CONVENTIONS.md 2>/dev/null)
-```
-
-### Linear Mode Context
-```bash
-# Fetch task via MCP (tool call, not bash)
-# Use mcp__linear__get_issue or equivalent
-# Extract: title, description, acceptance criteria, comments, labels
-```
-
-### Standalone Mode Context
 ```bash
 # Detect project type and test framework
 if [ -f package.json ]; then
-  FRAMEWORK=$(cat package.json | grep -oE '"(jest|vitest|mocha|ava)"' | head -1 | tr -d '"')
+  FRAMEWORK=$(node -e "try{const p=require('./package.json');const d={...p.dependencies,...p.devDependencies};console.log(d.vitest?'vitest':d.jest?'jest':d.mocha?'mocha':'')}catch{}" 2>/dev/null)
   PROJECT_TYPE="node"
 elif [ -f pyproject.toml ] || [ -f requirements.txt ]; then
   PROJECT_TYPE="python"
@@ -77,31 +35,60 @@ elif [ -f Cargo.toml ]; then
   PROJECT_TYPE="rust"
   FRAMEWORK="cargo-test"
 fi
-
-# Find existing tests to understand conventions
-find ${TARGET_PATH} \( -name "*.test.*" -o -name "*.spec.*" -o -name "*_test.*" -o -name "test_*" \) -not -path "*/node_modules/*" | head -5
 ```
 </step>
 
-<step name="check_existing_test_plan">
-If TEST-PLAN.md already exists for this phase/path:
+<step name="setup_tdd_directory">
+Create `.tdd/` if it doesn't exist:
 
-**Options:**
-1. **Update** — Keep confirmed specs, re-analyze for new/changed requirements
-2. **Replace** — Generate fresh test plan
-3. **View** — Show existing plan and exit
+```bash
+mkdir -p .tdd
+```
 
-If status is `draft` with unresolved ambiguities:
-- Check if Linear comments have been answered
-- If answered: update specs and set status to `confirmed`
-- If not answered: remind user and exit
+Check for existing TEST-PLAN.md:
+```bash
+if [ -f .tdd/TEST-PLAN.md ]; then
+  echo "Existing test plan found"
+fi
+```
+
+If TEST-PLAN.md exists:
+- If status is `draft` with unresolved ambiguities: check if Linear comments answered, offer to update
+- Otherwise: offer to update, replace, or view existing plan
+</step>
+
+<step name="load_context">
+
+### Linear Mode
+Fetch task via Linear MCP tools. Extract title, description, acceptance criteria, comments, labels, subtasks.
+
+Also scan the codebase for relevant files:
+```bash
+# Find source files that might be affected
+find . \( -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.rs" \) -not -path "*/node_modules/*" -not -path "*/.git/*" | head -30
+
+# Find existing tests
+find . \( -name "*.test.*" -o -name "*.spec.*" -o -name "*_test.*" -o -name "test_*" \) -not -path "*/node_modules/*" -not -path "*/.git/*" | head -20
+```
+
+### Standalone Mode (Path)
+```bash
+# Discover source and test files at the target
+find ${TARGET_PATH} \( -name "*.ts" -o -name "*.js" -o -name "*.py" -o -name "*.go" -o -name "*.rs" \) -not -name "*.test.*" -not -name "*.spec.*" -not -path "*/node_modules/*" | head -30
+
+find ${TARGET_PATH} \( -name "*.test.*" -o -name "*.spec.*" -o -name "*_test.*" -o -name "test_*" \) -not -path "*/node_modules/*" | head -20
+```
+
+### Standalone Mode (Description)
+The user's description IS the requirements. No file discovery needed upfront — the planner derives what files to create.
+
 </step>
 
 <step name="spawn_planner">
 Display banner:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- TDD ► PLANNING TESTS {mode indicator}
+ TDD ► PLANNING TESTS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ◆ Analyzing requirements for testable behaviors...
@@ -114,32 +101,37 @@ Task(
   prompt="First, read the tdd-planner agent definition for your role and instructions.
 
 <planning_context>
-**Mode:** {gsd|linear|standalone}
-**Target:** {phase number | linear task ID | file path}
-
+**Mode:** {linear|standalone}
+**Source:** {Linear task ID | path | user description}
 **Test framework:** {detected framework or 'detect'}
 **Project type:** {node|python|go|rust|unknown}
 
-{MODE-SPECIFIC CONTEXT}
+{FOR LINEAR MODE:}
+**Linear Task:**
+{task title, description, acceptance criteria, comments}
 
-**For GSD mode:**
-**Plans:** {plans_content}
-**Phase context:** {context_content}
-**Roadmap:** {roadmap_content}
-**Testing conventions:** {testing_conventions}
+**Codebase files:** {relevant source file list}
+**Existing tests:** {test file list}
 
-**For Linear mode:**
-**Task:** {linear_task_json}
-**Codebase context:** {relevant source files}
-
-**For Standalone mode:**
+{FOR STANDALONE PATH MODE:}
 **Target path:** {path}
-**Source files found:** {file list}
-**Existing tests found:** {file list}
+**Source files:** {file list}
+**Existing tests:** {file list}
+
+{FOR STANDALONE DESCRIPTION MODE:}
+**Feature description:** {user's description}
+**Project type:** {detected type}
 </planning_context>
 
+<anti_patterns_reference>
+When generating anti-pattern guards, reference these patterns by name:
+The Liar, The Giant, The Mockery, The Inspector, The Slow Poke,
+The Freeloader, The Secret Catcher, Happy Path Only, The Nitpicker,
+The Dead Tree, The Copy-Paste Plague, The Ice Cream Cone
+</anti_patterns_reference>
+
 <output>
-Write TEST-PLAN.md to: {output_path}
+Write TEST-PLAN.md to: .tdd/TEST-PLAN.md
 </output>
 ",
   subagent_type="general-purpose",
@@ -157,17 +149,8 @@ Write TEST-PLAN.md to: {output_path}
 
 **`## TEST PLAN BLOCKED`:**
 - Display reason
-- Offer: provide context, change mode, abort
+- Offer: provide more context, try different mode, abort
 
-</step>
-
-<step name="commit_test_plan">
-If GSD mode and commit_docs enabled:
-```bash
-node ~/.claude/get-shit-done/bin/gsd-tools.js commit "docs(${PHASE}): create TDD test plan" --files .planning/phases/${PHASE_DIR}/*-TEST-PLAN.md
-```
-
-If standalone: no auto-commit.
 </step>
 
 <step name="offer_next">
@@ -178,10 +161,10 @@ Output:
  TDD ► TEST PLAN READY ✓
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-**{Title}** — {N} test specs across {M} features
+**{Title}** — {N} test specs, {K} implementation tasks
 
-| Feature | Unit | Integration | Edge Cases |
-|---------|------|-------------|------------|
+| Feature | Unit | Edge Cases | Integration |
+|---------|------|------------|-------------|
 | {name} | {N} | {N} | {N} |
 
 Status: {confirmed | draft (N ambiguities pending)}
@@ -190,28 +173,20 @@ Status: {confirmed | draft (N ambiguities pending)}
 
 ## ▶ Next Up
 
-{If GSD mode:}
+{If confirmed:}
 **Execute with TDD** — write tests first, then implement
 
-/tdd:execute {phase}
-
-{If standalone:}
-**Review existing tests** for comparison
-
-/tdd:review {path}
+/tdd:execute
 
 {If draft with ambiguities:}
 **Waiting for clarification** on {N} questions
-Check Linear task {ID} for responses, then re-run /tdd:plan {args}
+Check Linear task {ID} for responses, then re-run:
 
-<sub>/clear first → fresh context window</sub>
+/tdd:plan {ID}
 
 ───────────────────────────────────────────────────────
 
-**Also available:**
-- cat {test_plan_path} — review full test plan
-- /tdd:review {path} — audit existing tests
-- /tdd:help — all TDD commands
+cat .tdd/TEST-PLAN.md — review full test plan
 
 ───────────────────────────────────────────────────────
 ```
@@ -221,10 +196,10 @@ Check Linear task {ID} for responses, then re-run /tdd:plan {args}
 
 <success_criteria>
 - [ ] Mode correctly detected from arguments
+- [ ] .tdd/ directory created
 - [ ] Context loaded for the detected mode
 - [ ] tdd-planner agent spawned with complete context
-- [ ] TEST-PLAN.md created at correct location
+- [ ] TEST-PLAN.md created at .tdd/TEST-PLAN.md
 - [ ] Ambiguities handled (posted to Linear or flagged)
-- [ ] Test plan committed (GSD mode)
 - [ ] User knows next steps
 </success_criteria>

@@ -1,7 +1,7 @@
 ---
 name: tdd:review
 description: Audit existing tests for anti-patterns, bad practices, and coverage gaps
-argument-hint: "[path | phase-number]"
+argument-hint: "[path]"
 allowed-tools:
   - Read
   - Bash
@@ -11,16 +11,15 @@ allowed-tools:
   - Task
 ---
 <objective>
-Analyze existing test suites for anti-patterns (The Liar, The Mockery, The Inspector, etc.), bad practices, and coverage gaps. Produces an actionable review report with line-specific findings and refactoring suggestions.
+Analyze existing test suites against 16 named anti-patterns and identify coverage gaps. Produces an actionable review report with line-specific findings and refactoring suggestions.
 
-**Modes:**
-- **Path mode** — `/tdd:review src/` → review all tests under that path
-- **Phase mode** — `/tdd:review 3` → review tests created during GSD phase 3
-- **No argument** — review all tests in the project
+**Arguments:**
+- Path (e.g., `src/`) → review tests under that path
+- No argument → review all tests in project
 
-**Output:** TEST-REVIEW.md with severity-rated findings, coverage gaps, and recommended actions.
+**Output:** `.tdd/TEST-REVIEW.md` with severity-rated findings, coverage gaps, and recommended actions.
 
-**Does NOT fix tests** — it analyzes and reports. You decide what to act on.
+Does NOT fix tests — analyzes and reports. You decide what to act on.
 </objective>
 
 <execution_context>
@@ -30,11 +29,9 @@ Analyze existing test suites for anti-patterns (The Liar, The Mockery, The Inspe
 
 <context>
 Arguments: $ARGUMENTS
-
-@.planning/STATE.md
 </context>
 
 <process>
 Execute the review-tests workflow from @workflows/review-tests.md end-to-end.
-Preserve all workflow gates (scope detection, reference loading, agent spawn, presentation).
+Preserve all workflow gates (scope detection, agent spawn, finding presentation).
 </process>

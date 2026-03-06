@@ -226,7 +226,7 @@ Full report written to TEST-REVIEW.md with line-specific findings and suggested 
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - Git
-- [GSD](https://github.com/get-shit-done/gsd) — optional, for phase integration
+- [GSD](https://github.com/gsd-build/get-shit-done) — optional, for phase integration
 - [Linear MCP](https://github.com/modelcontextprotocol/servers) — optional, for Linear task integration
 
 ---
